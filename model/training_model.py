@@ -3,7 +3,8 @@ from sklearn.model_selection import train_test_split
 import json
 import numpy as np
 from tqdm import tqdm  # for progress bars
-
+import gzip
+import io
 
 def sigmoid(z):
     z = np.clip(z, -500, 500)
@@ -78,7 +79,10 @@ def normalize(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_feather("ahs2023n.feather")
+    with gzip.open("ahs2023n.feather.gz", "rb") as f:
+        decompressed_bytes = f.read()
+
+    df = pd.read_feather(io.BytesIO(decompressed_bytes))
     df_final, stats = normalize(df)
 
     with open('stats.json', 'w') as f:
