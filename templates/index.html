@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Affordability Estimator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .carousel-container {
+      max-width: 800px;
+      margin: 40px auto;
+      position: relative;
+    }
+    .carousel-slide {
+      display: none;
+    }
+    .carousel-slide.active {
+      display: block;
+    }
+    .nav-controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .nav-arrow {
+      cursor: pointer;
+      font-size: 24px;
+      background: rgba(0,0,0,0.1);
+      color: black;
+      padding: 8px 12px;
+      margin: 0 10px;
+      border-radius: 8px;
+      user-select: none;
+      display: inline-block;
+    }
+    .property-box {
+      border: 1px solid #ccc;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 10px 0;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Home Affordability Estimator</h1>
+
+  <form method="post">
+    Income: <input type="number" name="income" required><br>
+    Monthly Debts: <input type="number" name="debts" required><br>
+    Down Payment: <input type="number" name="down" required><br>
+    Interest Rate (%): <input type="number" step="0.1" name="rate" required><br>
+    Loan Term (years): <input type="number" name="term" required><br>
+    Zipcode: <input type="number" name="zipcode" required><br>
+    <input type="submit" value="Check Affordability">
+  </form>
+
+  {% if results_chunks %}
+  <div class="carousel-container">
+    {% for listings in results_chunks %}
+    <div class="carousel-slide {% if loop.index0 == 0 %}active{% endif %}" data-index="{{ loop.index0 }}">
+      {% for listing in listings %}
+      <div class="property-box">
+        ${{ listing['list_price'] }} -
+        Probability: {{ listing['predicted_probability']|round(2) }} -
+        Affordable: {{ listing['affordable'] }} -
+        monthly Expenses / monthly income: {{ listing['affordable_ratio']|round(2) }} -
+        <a href="{{ listing['property_url'] }}" target="_blank" rel="noopener noreferrer">View</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="nav-controls">
+      <span class="nav-arrow" onclick="changeSlide(-1)">&#10094;</span>
+      <span class="nav-arrow" onclick="changeSlide(1)">&#10095;</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if error %}
+    <p style="color:red;">Error: {{ error }}</p>
+  {% endif %}
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.carousel-slide');
+
+    function changeSlide(direction) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide += direction;
+      if (currentSlide < 0) currentSlide = slides.length - 1;
+      if (currentSlide >= slides.length) currentSlide = 0;
+      slides[currentSlide].classList.add('active');
+    }
+  </script>
+</body>
+</html>
