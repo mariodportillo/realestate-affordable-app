@@ -1,11 +1,18 @@
-import gdown
-import os
+import pandas as pd
+import sqlite3
+import gzip
+import pyarrow.feather as feather
+import io
 
-os.makedirs("data", exist_ok=True)
-file_id = "1fGZGWALwTI0Auxzxs5lubuQqlBppxJBP"  # Your actual file ID
-output = "data/EVERY_LISTING.gz"
+# Load compressed Feather file
+with gzip.open("data/EVERY_LISTING.gz", "rb") as f:
+    df = feather.read_feather(io.BytesIO(f.read()))
 
-# Use an f-string to interpolate file_id
-url = f"https://drive.google.com/uc?id={file_id}"
+# Connect to (or create) SQLite database file
+conn = sqlite3.connect("data/listings.db")
 
-gdown.download(url, output, quiet=False)
+# Write dataframe to SQLite table named 'listings'
+df.to_sql("listings", conn, if_exists="replace", index=False)
+
+conn.close()
+print("Database created successfully!")
