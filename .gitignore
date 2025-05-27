@@ -1,2 +1,3 @@
-data/EVERY_LISTING.gz
+data/EVERY_LISTING
 data/listings.db
+secret.env
