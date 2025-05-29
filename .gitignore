@@ -2,3 +2,4 @@ data
 data/EVERY_LISTING
 data/listings.db
 secret.env
+.idea
