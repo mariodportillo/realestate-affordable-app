@@ -26,7 +26,7 @@ def chunk_list(lst, n):
         yield lst[i:i + n]
 
 def load_listings_for_zip(zipcode):
-    conn = oracledb.connect(user=username, password=password, dsn=dsn)
+    conn = oracledb.connect(user=username, password=password, dsn=dsn, config_dir=None)
     cursor = conn.cursor()
 
     zipcode = int(zipcode)
