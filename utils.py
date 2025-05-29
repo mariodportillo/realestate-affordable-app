@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import json
 
 def sigmoid(z):
     z = np.clip(z, -500, 500)
@@ -102,110 +102,65 @@ def ask_for_inputs(zipcodes: list) -> dict:
 
     return results
 
-# def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, norm_stats):
-#     """
-#     Given a zipcode and user financial data, evaluate each listing and return the probability of affordability.
-#     """
-#
-#     # Clean zip_code column: convert to int, drop invalid rows
-#     all_listings_df = all_listings_df.copy()
-#     all_listings_df['zip_code'] = pd.to_numeric(all_listings_df['zip_code'], errors='coerce')
-#     all_listings_df = all_listings_df.dropna(subset=['zip_code'])
-#     all_listings_df['zip_code'] = all_listings_df['zip_code'].astype(int)
-#
-#     # Filter listings by ZIP code
-#     listings_in_zip = all_listings_df[all_listings_df['zip_code'] == zipcode_input].copy()
-#     if listings_in_zip.empty:
-#         print("No listings found in that ZIP code.")
-#         return []
-#
-#     predictions = []
-#
-#     for idx, row in listings_in_zip.iterrows():
-#         try:
-#             # Validate and convert list_price
-#             list_price = float(row['list_price']) if pd.notna(row['list_price']) else 0
-#             if list_price <= 0:
-#                 continue  # Skip invalid prices
-#
-#             # Extract user inputs
-#             down_payment = float(user_inputs['down_payment'])
-#             interest = float(user_inputs['annual_interest_rate'])
-#             loan_term_months = int(user_inputs['loan_term_in_years'] * 12)
-#             monthly_debts = float(user_inputs['monthly_debts'])
-#             hincome = float(user_inputs['grossIncome'])
-#
-#             # Calculate total housing cost (custom function you have)
-#             tothcamt = monthly_expenses(row, interest, loan_term_months, monthly_debts, down_payment)
-#
-#             # Bathrooms: fallback to 0 if missing or invalid
-#             bathrooms = 0
-#             if pd.notna(row.get('full_baths')):
-#                 try:
-#                     bathrooms = int(float(row['full_baths']))
-#                 except (ValueError, TypeError):
-#                     bathrooms = 0
-#
-#             # Bedrooms: fallback to 0 if missing or invalid
-#             bedrooms = 0
-#             if pd.notna(row.get('beds')):
-#                 try:
-#                     bedrooms = int(float(row['beds']))
-#                     bedrooms = max(0, min(6, bedrooms))  # clamp between 0 and 6
-#                 except (ValueError, TypeError):
-#                     bedrooms = 0
-#
-#             # Unitsize is the square footage (assumed numeric), handle missing
-#             unitsize = float(row['sqft']) if pd.notna(row.get('sqft')) else 0
-#
-#             # Normalize or scale inputs here if your model expects normalized inputs
-#             # Example (if your model expects normalized):
-#             # Otherwise just raw or scaled as per your training
-#
-#             # Construct feature vector with intercept term 1 first (bias)
-#             monthly_income = hincome / 12 if hincome > 0 else 1
-#             affordable_ratio = float(tothcamt) / monthly_income
-#
-#             features = {
-#                 'HINCP': hincome,
-#                 'BEDROOMS': bedrooms,
-#                 'BATHROOMS': bathrooms,
-#                 'TOTHCAMT': tothcamt,
-#                 'UNITSIZE': unitsize,
-#                 'AFFORDABLE': affordable_ratio
-#             }
-#
-#             normalized_features = []
-#             for name, value in features.items():
-#                 mean, std = norm_stats[name]
-#                 norm_val = (value - mean) / std if std > 0 else 0
-#                 normalized_features.append(norm_val)
-#
-#             x_vec = np.array([1] + normalized_features)
-#
-#             # Calculate probability using sigmoid and your learned thetas
-#             prob = sigmoid(np.dot(thetas, x_vec))
-#
-#             predictions.append({
-#                 "listing_id": row.get("id", idx),
-#                 "list_price": list_price,
-#                 "property_url": row.get("property_url", None),
-#                 "tothcamt": tothcamt,
-#                 "affordable_ratio": affordable_ratio,
-#                 "hincome": hincome,
-#                 "bathrooms": bathrooms,
-#                 "bedrooms": bedrooms,
-#                 "sqft": unitsize,
-#                 "predicted_probability": prob,
-#                 "affordable": int(prob >= 0.5)
-#             })
-#
-#         except Exception as e:
-#             continue  # skip problematic rows
-#
-#     # Sort predictions by descending affordability probability
-#     predictions = sorted(predictions, key=lambda x: x['predicted_probability'], reverse=True)
-#     return predictions
+
+def find_zip_codes(user_inputs: dict, json_path="data/zip_mean_prices.json", metadata_path="data/zip_metadata.json") -> dict:
+    gross_income = user_inputs["grossIncome"] - (user_inputs["monthly_debts"] * 12)
+    down = user_inputs["down_payment"]
+    monthly_rate = (user_inputs["annual_interest_rate"] / 100) / 12
+    term = user_inputs["loan_term_in_years"]
+    months = term * 12
+
+    if gross_income <= 0:
+        return {}
+
+    # Load mean home prices per ZIP code
+    with open(json_path, "r") as f:
+        zip_price_means = json.load(f)
+
+    # Load city/state info per ZIP code
+    with open(metadata_path, "r") as f:
+        zip_metadata = json.load(f)
+
+    results = []
+
+    for zip_code, mean_price in zip_price_means.items():
+        principal = max(mean_price - down, 0)
+        print(f"ZIP: {zip_code}, mean_price: {mean_price}, down: {down}, principal: {principal}")
+
+        if principal == 0:
+            total_home_cost_year = 0
+        else:
+            try:
+                M = (principal * monthly_rate * (1 + monthly_rate) ** months) / ((1 + monthly_rate) ** months - 1)
+                total_home_cost_year = M * 12
+            except ZeroDivisionError:
+                total_home_cost_year = float("inf")
+
+        affordability = total_home_cost_year / gross_income
+        affordability = 1 / (1 + affordability)
+
+        if zip_code in zip_metadata:
+            city = zip_metadata[zip_code].get("city", "Unknown")
+            state = zip_metadata[zip_code].get("state", "Unknown")
+
+            results.append({
+                "zip": zip_code,
+                "city": city,
+                "state": state,
+                "score": affordability
+            })
+
+    # Sort by affordability (lower score = more affordable)
+    sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    # Return top 200, converted into a dict
+    top_200 = sorted_results[:200]
+    return {entry["zip"]: {
+        "score": entry["score"],
+        "city": entry["city"],
+        "state": entry["state"]
+    } for entry in top_200}
+
 
 def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, norm_stats):
     """
@@ -299,6 +254,10 @@ def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, 
     # Build response records
     df['listing_id'] = df.get('id', df.index)
     df['property_url'] = df.get('property_url', None)
+
+    mask = down_payment > df['list_price']
+    df.loc[mask, 'predicted_probability'] = 1.0
+    df.loc[mask, 'affordable'] = 1
 
     results = df[
         ['listing_id', 'list_price', 'property_url', 'TOTHCAMT', 'affordable_ratio',

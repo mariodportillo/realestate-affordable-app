@@ -3,6 +3,7 @@
 <head>
   <title>Affordability Estimator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .carousel-container {
       max-width: 800px;
@@ -37,22 +38,36 @@
       margin: 10px 0;
       background-color: #f9f9f9;
     }
+    #affordabilityChartContainer {
+      max-width: 500px;
+      margin: 30px auto;
+    }
   </style>
 </head>
 <body>
   <h1>Home Affordability Estimator</h1>
 
   <form method="post">
-    Income: <input type="number" name="income" required><br>
-    Monthly Debts: <input type="number" name="debts" required><br>
-    Down Payment: <input type="number" name="down" required><br>
-    Interest Rate (%): <input type="number" step="0.1" name="rate" required><br>
-    Loan Term (years): <input type="number" name="term" required><br>
-    Zipcode: <input type="number" name="zipcode" required><br>
-    <input type="submit" value="Check Affordability">
+    Income: <input type="number" name="income" required value="{{ form_values.income | default('') }}"><br>
+    Monthly Debts: <input type="number" name="debts" required value="{{ form_values.debts | default('') }}"><br>
+    Down Payment: <input type="number" name="down" required value="{{ form_values.down | default('') }}"><br>
+    Interest Rate (%): <input type="number" step="0.1" name="rate" required value="{{ form_values.rate | default('') }}"><br>
+    Loan Term (years): <input type="number" name="term" required value="{{ form_values.term | default('') }}"><br>
+    Zip code: <input type="number" name="zipcode" value="{{ form_values.zipcode | default('') }}"><br>
+
+    <!-- Two submit buttons with different names/values -->
+    <div class="button-container">
+      <button type="submit" name="action" value="check_affordability">Check Affordability</button>
+      <button type="submit" name="action" value="find_affordable_zips">Find Affordable ZIPs</button>
+    </div>
   </form>
 
+
   {% if results_chunks %}
+  <div id="affordabilityChartContainer">
+    <canvas id="affordabilityChart"></canvas>
+  </div>
+
   <div class="carousel-container">
     {% for listings in results_chunks %}
     <div class="carousel-slide {% if loop.index0 == 0 %}active{% endif %}" data-index="{{ loop.index0 }}">
@@ -75,6 +90,49 @@
   </div>
   {% endif %}
 
+{% if affordable_zips %}
+  <h2 style="text-align:center;">Top Affordable ZIP Codes</h2>
+
+  <!-- Filter Dropdown -->
+  <label for="states">Filter by State:</label>
+  <select name="states" id="states">
+    <option value="ALL">All States</option>
+    {% for state in affordable_zips.values() | map(attribute='state') | unique | sort %}
+      <option value="{{ state }}">{{ state }}</option>
+    {% endfor %}
+  </select>
+
+  <!-- Display Properties -->
+  <div id="property-container">
+    {% for zip, data in affordable_zips.items() %}
+      <div class="property-box" data-state="{{ data.state }}">
+        ZIP Code: {{ zip }}<br>
+        City: {{ data.city | default('N/A') }}<br>
+        State: {{ data.state | default('N/A') }}<br>
+        Affordability Score: {{ data.score | round(2) }}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- JS Filtering -->
+  <script>
+    document.getElementById('states').addEventListener('change', function () {
+      const selectedState = this.value;
+      document.querySelectorAll('.property-box').forEach(box => {
+        const boxState = box.dataset.state;
+        box.style.display = (selectedState === 'ALL' || boxState === selectedState) ? 'block' : 'none';
+      });
+    });
+  </script>
+
+  <div class="nav-controls">
+      <span class="nav-arrow" onclick="changeSlide(-1)">&#10094;</span>
+      <span class="nav-arrow" onclick="changeSlide(1)">&#10095;</span>
+  </div>
+{% endif %}
+
+
+
   {% if error %}
     <p style="color:red;">Error: {{ error }}</p>
   {% endif %}
@@ -90,6 +148,32 @@
       if (currentSlide >= slides.length) currentSlide = 0;
       slides[currentSlide].classList.add('active');
     }
+
+    {% if affordable_count is defined and not_affordable_count is defined %}
+    const ctx = document.getElementById('affordabilityChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Affordable', 'Not Affordable'],
+        datasets: [{
+          data: [{{ affordable_count }}, {{ not_affordable_count }}],
+          backgroundColor: ['#4CAF50', '#F44336'],
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          title: {
+            display: true,
+            text: 'Affordability Distribution'
+          }
+        }
+      }
+    });
+    {% endif %}
   </script>
 </body>
 </html>
