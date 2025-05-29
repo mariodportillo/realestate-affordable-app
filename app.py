@@ -13,7 +13,7 @@ password = os.getenv("ORACLE_DB_PASSWORD")
 dsn = "affordapp_high"
 
 # Initialize Oracle Instant Client
-oracledb.init_oracle_client(lib_dir="/Users/marioportillo/oracle/instantclient/instantclient-basic-macos.arm64-23.3.0.23.09-2/")
+# oracledb.init_oracle_client(lib_dir="/Users/marioportillo/oracle/instantclient/instantclient-basic-macos.arm64-23.3.0.23.09-2/")
 
 app = Flask(__name__)
 
