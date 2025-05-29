@@ -31,6 +31,7 @@ matplotlib==3.10.3
 numpy==2.2.4
 oci==2.153.0
 oci-cli==3.57.0
+oracledb==3.1.1
 packaging==25.0
 pandas==2.2.3
 pillow==11.2.1
