@@ -2,6 +2,7 @@ import oracledb
 import numpy as np
 import pandas as pd
 import json
+import ssl
 from flask import Flask, render_template, request
 from utils import evaluate_affordability, find_zip_codes
 import os
@@ -21,12 +22,25 @@ thetas = np.load("model/weights.npy")
 with open("model/stats.json", "r") as f:
     norm_stats = json.load(f)
 
+
 def chunk_list(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
+
 def load_listings_for_zip(zipcode):
-    conn = oracledb.connect(user=username, password=password, dsn=dsn, config_dir=wallet_location)
+    # Create SSL context that doesn't verify certificates
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    conn = oracledb.connect(
+        user=username,
+        password=password,
+        dsn=dsn,
+        config_dir=wallet_location,
+        ssl_context=ssl_context
+    )
     cursor = conn.cursor()
 
     zipcode = int(zipcode)
@@ -103,6 +117,7 @@ def index():
             return render_template("index.html", error=str(e), form_values=form_values)
 
     return render_template("index.html", form_values=form_values)
+
 
 if __name__ == '__main__':
     app.run()
