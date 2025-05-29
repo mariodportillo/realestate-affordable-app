@@ -7,7 +7,7 @@ from utils import evaluate_affordability, find_zip_codes
 import os
 
 # --- Oracle connection info from env vars ---
-wallet_location = "/Users/marioportillo/Documents/cs109/cs109_project/Wallet_AffordApp"
+wallet_location = "Wallet_AffordApp"
 username = os.getenv("ORACLE_DB_USERNAME")
 password = os.getenv("ORACLE_DB_PASSWORD")
 dsn = "affordapp_high"

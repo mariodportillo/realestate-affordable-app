@@ -1,0 +1,12 @@
+affordapp_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=g80284490b6f145_affordapp_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+affordapp_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=g80284490b6f145_affordapp_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+affordapp_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=g80284490b6f145_affordapp_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+affordapp_tp = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=g80284490b6f145_affordapp_tp.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+affordapp_tpurgent = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=g80284490b6f145_affordapp_tpurgent.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+
