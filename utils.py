@@ -182,52 +182,52 @@ def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, 
 
     # Filter and clean listings by zip code
     df = all_listings_df.copy()
-    df['zip_code'] = pd.to_numeric(df['zip_code'], errors='coerce')
-    df = df[df['zip_code'] == int(zipcode_input)]
-    df = df[pd.to_numeric(df['list_price'], errors='coerce') > 0]
+    df['ZIP_CODE'] = pd.to_numeric(df['ZIP_CODE'], errors='coerce')
+    df = df[df['ZIP_CODE'] == int(zipcode_input)]
+    df = df[pd.to_numeric(df['LIST_PRICE'], errors='coerce') > 0]
 
     if df.empty:
         return []
 
     # Convert relevant fields to numeric
-    df['list_price'] = pd.to_numeric(df['list_price'], errors='coerce').fillna(0)
-    df['beds'] = pd.to_numeric(df.get('beds', 0), errors='coerce').fillna(0).astype(int).clip(0, 6)
-    df['full_baths'] = pd.to_numeric(df.get('full_baths', 0), errors='coerce').fillna(0).astype(int)
-    df['sqft'] = pd.to_numeric(df.get('sqft', 0), errors='coerce').fillna(0)
-    df['hoa_fee'] = pd.to_numeric(df.get('hoa_fee', 0), errors='coerce').fillna(0)
-    df['tax'] = pd.to_numeric(df.get('tax', np.nan), errors='coerce')
+    df['LIST_PRICE'] = pd.to_numeric(df['LIST_PRICE'], errors='coerce').fillna(0)
+    df['BEDS'] = pd.to_numeric(df.get('BEDS', 0), errors='coerce').fillna(0).astype(int).clip(0, 6)
+    df['FULL_BATHS'] = pd.to_numeric(df.get('FULL_BATHS', 0), errors='coerce').fillna(0).astype(int)
+    df['SQFT'] = pd.to_numeric(df.get('SQFT', 0), errors='coerce').fillna(0)
+    df['HOA_FEE'] = pd.to_numeric(df.get('HOA_FEE', 0), errors='coerce').fillna(0)
+    df['TAX'] = pd.to_numeric(df.get('TAX', np.nan), errors='coerce')
 
     # Estimate missing taxes
-    estimated_tax = df['list_price'] * (0.0125 + 0.0025)
-    df['tax'] = df['tax'].fillna(estimated_tax)
-    df['tax_monthly'] = df['tax'] / 12.0
+    estimated_tax = df['LIST_PRICE'] * (0.0125 + 0.0025)
+    df['TAX'] = df['TAX'].fillna(estimated_tax)
+    df['TAX_MONTHLY'] = df['TAX'] / 12.0
 
     # Fixed insurance
-    df['insurance'] = 200.0
+    df['INSURANCE'] = 200.0
 
     # Mortgage calculation (vectorized)
-    loan_amount = (df['list_price'] - down_payment).clip(lower=0)
+    loan_amount = (df['LIST_PRICE'] - down_payment).clip(lower=0)
     monthly_rate = interest / 1200
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        df['mortgage'] = (
+        df['MORTGAGE'] = (
             loan_amount * (monthly_rate * (1 + monthly_rate) ** loan_term_months)
             / ((1 + monthly_rate) ** loan_term_months - 1)
         )
-        df['mortgage'] = df['mortgage'].replace([np.inf, -np.inf], 0).fillna(0)
+        df['MORTGAGE'] = df['MORTGAGE'].replace([np.inf, -np.inf], 0).fillna(0)
 
     # Total monthly housing cost
-    df['TOTHCAMT'] = df['tax_monthly'] + df['insurance'] + df['hoa_fee'] + df['mortgage'] + monthly_debts
+    df['TOTHCAMT'] = df['TAX_MONTHLY'] + df['INSURANCE'] + df['HOA_FEE'] + df['MORTGAGE'] + monthly_debts
 
     # Affordability ratio
-    df['affordable_ratio'] = df['TOTHCAMT'] / monthly_income
+    df['AFFORDABLE_RATIO'] = df['TOTHCAMT'] / monthly_income
 
     # Add features
     df['HINCP'] = hincome
-    df['BEDROOMS'] = df['beds']
-    df['BATHROOMS'] = df['full_baths']
-    df['UNITSIZE'] = df['sqft']
-    df['AFFORDABLE'] = df['affordable_ratio']
+    df['BEDROOMS'] = df['BEDS']
+    df['BATHROOMS'] = df['FULL_BATHS']
+    df['UNITSIZE'] = df['SQFT']
+    df['AFFORDABLE'] = df['AFFORDABLE_RATIO']
 
     # Feature normalization
     feature_cols = ['HINCP', 'BEDROOMS', 'BATHROOMS', 'TOTHCAMT', 'UNITSIZE', 'AFFORDABLE']
@@ -235,9 +235,17 @@ def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, 
 
     for col in feature_cols:
         value = df[col]
-        mean, std = norm_stats.get(col, (0, 1))
-        mean = float(mean)
-        std = float(std) if std > 0 else 1
+        mean, std = norm_stats.get(col, (0.0, 1.0))
+        try:
+            mean = float(mean)
+        except (TypeError, ValueError):
+            mean = 0.0
+        try:
+            std = float(std)
+            if std <= 0:
+                std = 1.0
+        except (TypeError, ValueError):
+            std = 1.0
         norm_val = (value - mean) / std
         normalized.append(norm_val)
 
@@ -248,21 +256,22 @@ def evaluate_affordability(zipcode_input, all_listings_df, user_inputs, thetas, 
     # Predictions
     z = X.dot(thetas)
     probs = sigmoid(z)
-    df['predicted_probability'] = probs
-    df['affordable'] = (probs >= 0.5).astype(int)
+    df['PREDICTED_PROBABILITY'] = probs
+    df['AFFORDABLE'] = (probs >= 0.5).astype(int)
 
     # Build response records
-    df['listing_id'] = df.get('id', df.index)
-    df['property_url'] = df.get('property_url', None)
+    df['LISTING_ID'] = df.get('ID', df.index)
+    df['PROPERTY_URL'] = df.get('PROPERTY_URL', None)
 
-    mask = down_payment > df['list_price']
-    df.loc[mask, 'predicted_probability'] = 1.0
-    df.loc[mask, 'affordable'] = 1
+    mask = down_payment > df['LIST_PRICE']
+    df.loc[mask, 'PREDICTED_PROBABILITY'] = 1.0
+    df.loc[mask, 'AFFORDABLE'] = 1
 
     results = df[
-        ['listing_id', 'list_price', 'property_url', 'TOTHCAMT', 'affordable_ratio',
-         'HINCP', 'BATHROOMS', 'BEDROOMS', 'UNITSIZE', 'predicted_probability', 'affordable']
-    ].sort_values(by='predicted_probability', ascending=False)
+        ['LISTING_ID', 'LIST_PRICE', 'PROPERTY_URL', 'TOTHCAMT', 'AFFORDABLE_RATIO',
+         'HINCP', 'BATHROOMS', 'BEDROOMS', 'UNITSIZE', 'PREDICTED_PROBABILITY', 'AFFORDABLE']
+    ].sort_values(by='PREDICTED_PROBABILITY', ascending=False)
 
     return results.to_dict(orient='records')
+
 

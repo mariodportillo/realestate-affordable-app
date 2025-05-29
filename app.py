@@ -1,10 +1,19 @@
-import sqlite3
+import oracledb
 import numpy as np
 import pandas as pd
 import json
 from flask import Flask, render_template, request
-from utils import evaluate_affordability, find_zip_codes  # import new function
+from utils import evaluate_affordability, find_zip_codes
 import os
+
+# --- Oracle connection info from env vars ---
+wallet_location = "/Users/marioportillo/Documents/cs109/cs109_project/Wallet_AffordApp"
+username = os.getenv("ORACLE_DB_USERNAME")
+password = os.getenv("ORACLE_DB_PASSWORD")
+dsn = "affordapp_high"
+
+# Initialize Oracle Instant Client
+oracledb.init_oracle_client(lib_dir="/Users/marioportillo/oracle/instantclient/instantclient-basic-macos.arm64-23.3.0.23.09-2/")
 
 app = Flask(__name__)
 
@@ -16,16 +25,20 @@ def chunk_list(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "data/listings.db")
-
 def load_listings_for_zip(zipcode):
-    conn = sqlite3.connect(DB_PATH)
-    query = "SELECT * FROM listings WHERE CAST(zip_code AS INTEGER) = ?"
-    df = pd.read_sql_query(query, conn, params=(zipcode,))
+    conn = oracledb.connect(user=username, password=password, dsn=dsn)
+    cursor = conn.cursor()
+
+    zipcode = int(zipcode)
+    query = "SELECT * FROM listings WHERE zip_code = :zipcode"  # named bind
+    cursor.execute(query, zipcode=zipcode)  # pass named parameter
+    columns = [col[0] for col in cursor.description]
+    rows = cursor.fetchall()
     conn.close()
+    df = pd.DataFrame(rows, columns=columns)
     print(f"[DEBUG] Found {len(df)} listings for ZIP {zipcode}")
     return df
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -56,8 +69,13 @@ def index():
                     raise ValueError("Please enter a valid zipcode (numbers only).")
                 zipcode = int(zipcode_str)
                 listings_df = load_listings_for_zip(zipcode)
+
                 results = evaluate_affordability(zipcode, listings_df, user_inputs, thetas, norm_stats)
+                print(results)
+
                 results_chunks = list(chunk_list(results, 10))
+
+                print(results_chunks)
                 affordable_count = sum(1 for r in results if r.get('affordable'))
                 not_affordable_count = len(results) - affordable_count
 
@@ -70,11 +88,8 @@ def index():
                 )
 
             elif action == "find_affordable_zips":
-                # You may want to pass path to your ZIP price JSON here
                 affordable_zips = find_zip_codes(user_inputs, json_path="data/zip_mean_prices.json")
 
-                # affordable_zips is a dict of zip_code (str) : affordability_score (float)
-                # Sort descending by score
                 return render_template(
                     "index.html",
                     form_values=form_values,
@@ -82,7 +97,6 @@ def index():
                 )
 
             else:
-                # Unknown action fallback
                 return render_template("index.html", form_values=form_values)
 
         except Exception as e:

@@ -55,13 +55,11 @@
     Loan Term (years): <input type="number" name="term" required value="{{ form_values.term | default('') }}"><br>
     Zip code: <input type="number" name="zipcode" value="{{ form_values.zipcode | default('') }}"><br>
 
-    <!-- Two submit buttons with different names/values -->
     <div class="button-container">
       <button type="submit" name="action" value="check_affordability">Check Affordability</button>
       <button type="submit" name="action" value="find_affordable_zips">Find Affordable ZIPs</button>
     </div>
   </form>
-
 
   {% if results_chunks %}
   <div id="affordabilityChartContainer">
@@ -73,11 +71,11 @@
     <div class="carousel-slide {% if loop.index0 == 0 %}active{% endif %}" data-index="{{ loop.index0 }}">
       {% for listing in listings %}
       <div class="property-box">
-        ${{ listing['list_price'] }} -
-        Probability: {{ listing['predicted_probability']|round(2) }} -
-        Affordable: {{ listing['affordable'] }} -
-        monthly Expenses / monthly income: {{ listing['affordable_ratio']|round(2) }} -
-        <a href="{{ listing['property_url'] }}" target="_blank" rel="noopener noreferrer">View</a>
+        PRICE: ${{ listing['LIST_PRICE'] | default(0) | float | round(0) | int }}<br>
+        PROBABILITY: {{ listing['PREDICTED_PROBABILITY'] | default(0) | float | round(2) }}<br>
+        AFFORDABLE: {{ listing['AFFORDABLE'] | default('N/A') }}<br>
+        EXPENSES / INCOME: {{ listing['AFFORDABLE_RATIO'] | default(0) | float | round(2) }}<br>
+        <a href="{{ listing['PROPERTY_URL'] | default('#') }}" target="_blank" rel="noopener noreferrer">VIEW LISTING</a>
       </div>
       {% endfor %}
     </div>
@@ -90,10 +88,9 @@
   </div>
   {% endif %}
 
-{% if affordable_zips %}
+  {% if affordable_zips %}
   <h2 style="text-align:center;">Top Affordable ZIP Codes</h2>
 
-  <!-- Filter Dropdown -->
   <label for="states">Filter by State:</label>
   <select name="states" id="states">
     <option value="ALL">All States</option>
@@ -102,19 +99,17 @@
     {% endfor %}
   </select>
 
-  <!-- Display Properties -->
   <div id="property-container">
     {% for zip, data in affordable_zips.items() %}
       <div class="property-box" data-state="{{ data.state }}">
         ZIP Code: {{ zip }}<br>
-        City: {{ data.city | default('N/A') }}<br>
-        State: {{ data.state | default('N/A') }}<br>
-        Affordability Score: {{ data.score | round(2) }}
+        CITY: {{ data.city | default('N/A') }}<br>
+        STATE: {{ data.state | default('N/A') }}<br>
+        AFFORDABILITY SCORE: {{ data.score | default(0) | round(2) }}
       </div>
     {% endfor %}
   </div>
 
-  <!-- JS Filtering -->
   <script>
     document.getElementById('states').addEventListener('change', function () {
       const selectedState = this.value;
@@ -129,9 +124,7 @@
       <span class="nav-arrow" onclick="changeSlide(-1)">&#10094;</span>
       <span class="nav-arrow" onclick="changeSlide(1)">&#10095;</span>
   </div>
-{% endif %}
-
-
+  {% endif %}
 
   {% if error %}
     <p style="color:red;">Error: {{ error }}</p>
