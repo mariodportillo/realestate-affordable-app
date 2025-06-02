@@ -77,7 +77,6 @@ def normalize(df):
     return df, stats
 
 
-
 if __name__ == "__main__":
     with gzip.open("ahs2023n.feather.gz", "rb") as f:
         decompressed_bytes = f.read()

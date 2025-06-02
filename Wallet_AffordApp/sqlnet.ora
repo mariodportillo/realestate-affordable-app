@@ -1,4 +1,4 @@
-WALLET_LOCATION = (SOURCE = (METHOD = FILE) (METHOD_DATA = (DIRECTORY = /Users/marioportillo/Documents/cs109/cs109_project/Wallet_AffordApp)))
+WALLET_LOCATION = (SOURCE = (METHOD = FILE) (METHOD_DATA = (DIRECTORY = /Users/marioportillo/Documents/cs109/cs109_project/affordapp/Wallet_AffordApp)))
 
 SSL_SERVER_DN_MATCH = yes
 

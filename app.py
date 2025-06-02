@@ -1,20 +1,20 @@
 import oracledb
 import numpy as np
 import pandas as pd
-import json
 import ssl
+import json
 from flask import Flask, render_template, request
 from utils import evaluate_affordability, find_zip_codes
+import sys
 import os
 
-# --- Oracle connection info from env vars ---
-wallet_location = "Wallet_AffordApp"
-username = os.getenv("ORACLE_DB_USERNAME")
-password = os.getenv("ORACLE_DB_PASSWORD")
-dsn = "affordapp_high"
 
-# Initialize Oracle Instant Client
-# oracledb.init_oracle_client(lib_dir="/Users/marioportillo/oracle/instantclient/instantclient-basic-macos.arm64-23.3.0.23.09-2/")
+# Test with original credentials first, then switch to read-only
+# --- Oracle connection info ---
+wallet_location = "Wallet_AffordApp"
+username = ORACLE_DB_USERNAME  # Original admin user
+password = ORACLE_DB_PASSWORD  # Original admin password
+dsn = "affordapp_high"
 
 app = Flask(__name__)
 
@@ -29,22 +29,23 @@ def chunk_list(lst, n):
 
 
 def load_listings_for_zip(zipcode):
-    # Create SSL context that doesn't verify certificates
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
+    try:
+        os.environ['TNS_ADMIN'] = wallet_location
 
-    conn = oracledb.connect(
-        user=username,
-        password=password,
-        dsn=dsn,
-        config_dir=wallet_location,
-        ssl_context=ssl_context
-    )
+        conn = oracledb.connect(
+            user=username,
+            password=password,
+            dsn=dsn
+        )
+    except Exception as e:
+        print("Failed to connect", str(e))
+        return pd.DataFrame()
+
     cursor = conn.cursor()
 
     zipcode = int(zipcode)
-    query = "SELECT * FROM listings WHERE zip_code = :zipcode"  # named bind
+    # Updated query to use schema-qualified table name
+    query = "SELECT * FROM admin.listings WHERE zip_code = :zipcode"  # Added admin. prefix
     cursor.execute(query, zipcode=zipcode)  # pass named parameter
     columns = [col[0] for col in cursor.description]
     rows = cursor.fetchall()

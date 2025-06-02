@@ -2,6 +2,4 @@ data/EVERY_LISTING
 data/listings.db
 secret.env
 .idea
-listings.db
-listings.sql
 __pycache__/
