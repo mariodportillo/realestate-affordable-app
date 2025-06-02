@@ -17,19 +17,12 @@ dsn = "affordapp_high"
 
 os.environ["TNS_ADMIN"] = wallet_location
 
-lib_dir = "/home/render/project_root/instantclient_19_8"
+lib_dir = LD_LIBRARY_PATH
 wallet_dir = wallet_location
 
 # Check that Oracle Instant Client directory exists and has expected files
 if not os.path.isdir(lib_dir):
     print(f"[ERROR] Oracle Instant Client directory does NOT exist: {lib_dir}")
-    sys.exit(1)
-
-# Optional: Check that the Instant Client directory contains some expected shared libs
-expected_files = ["libclntsh.so", "libocci.so"]
-missing_files = [f for f in expected_files if not any(fname.startswith(f) for fname in os.listdir(lib_dir))]
-if missing_files:
-    print(f"[ERROR] Oracle Instant Client missing expected files: {missing_files}")
     sys.exit(1)
 
 # Check that wallet directory exists and has tnsnames.ora
