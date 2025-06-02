@@ -53,7 +53,6 @@ def load_listings_for_zip(zipcode):
     rows = cursor.fetchall()
     conn.close()
     df = pd.DataFrame(rows, columns=columns)
-    print(f"[DEBUG] Found {len(df)} listings for ZIP {zipcode}")
     return df
 
 
@@ -88,11 +87,8 @@ def index():
                 listings_df = load_listings_for_zip(zipcode)
 
                 results = evaluate_affordability(zipcode, listings_df, user_inputs, thetas, norm_stats)
-                print(results)
 
                 results_chunks = list(chunk_list(results, 10))
-
-                print(results_chunks)
                 affordable_count = sum(1 for r in results if r.get('affordable'))
                 not_affordable_count = len(results) - affordable_count
 
