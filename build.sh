@@ -1,22 +1,29 @@
 #!/bin/bash
-#!/bin/bash
 
 echo "[INFO] Starting build script..."
 
-# Install Oracle Instant Client if not already available
-# (Render uses Ubuntu, so we can use apt or direct download if needed)
-# But if you've already included the Instant Client files in your repo, just unpack:
-if [ ! -d "instantclient_19_8" ]; then
+# Define the expected ZIP file and target directory
+ZIP_FILE="instantclient-basic-linux.zseries64-19.26.0.0.0dbru.zip"
+TARGET_DIR="instantclient_19_26"
+
+# Check if the ZIP file exists in the current directory
+if [ ! -f "$ZIP_FILE" ]; then
+  echo "[ERROR] Oracle Instant Client ZIP file not found: $ZIP_FILE"
+  exit 1
+fi
+
+# Unzip the Oracle Instant Client if not already unpacked
+if [ ! -d "$TARGET_DIR" ]; then
   echo "[INFO] Unpacking Oracle Instant Client..."
-  unzip -q instantclient-basiclite-linux.x64-19.8.0.0.0dbru.zip
+  unzip -q "$ZIP_FILE" -d "$TARGET_DIR"
 fi
 
 # Set up the Oracle environment variables
 echo "[INFO] Exporting Oracle environment variables..."
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/instantclient_19_8
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/$TARGET_DIR"
 export TNS_ADMIN=$(pwd)/Wallet_AffordApp
 
-# Make sure wallet directory exists
+# Verify wallet directory exists
 echo "[INFO] Wallet directory is:"
 ls Wallet_AffordApp
 
@@ -29,4 +36,3 @@ else
 fi
 
 echo "[INFO] Build script completed."
-
