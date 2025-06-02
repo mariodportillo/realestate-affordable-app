@@ -1,11 +1,9 @@
 import oracledb
 import numpy as np
 import pandas as pd
-import ssl
 import json
 from flask import Flask, render_template, request
 from utils import evaluate_affordability, find_zip_codes
-import sys
 import os
 
 
@@ -13,42 +11,9 @@ import os
 wallet_location = "Wallet_AffordApp"
 username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
 password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
+wallet_password = os.environ.get("WALLET_PASSWORD")
+
 dsn = "affordapp_high"
-
-os.environ["TNS_ADMIN"] = wallet_location
-
-wallet_dir = wallet_location
-# Define the path to the Oracle Instant Client directory
-lib_dir = os.path.join(os.getcwd(), "instantclient_19_26")
-
-# Check that Oracle Instant Client directory exists
-if not os.path.isdir(lib_dir):
-    print(f"[ERROR] Oracle Instant Client directory does NOT exist: {lib_dir}")
-    sys.exit(1)
-
-# Define the wallet location
-wallet_location = os.path.join(os.getcwd(), "Wallet_AffordApp")
-
-# Check that wallet directory exists
-if not os.path.isdir(wallet_location):
-    print(f"[ERROR] Wallet directory does NOT exist: {wallet_location}")
-    sys.exit(1)
-
-# Check that tnsnames.ora exists in the wallet directory
-tns_file = os.path.join(wallet_location, "tnsnames.ora")
-if not os.path.isfile(tns_file):
-    print(f"[ERROR] Wallet missing tnsnames.ora in: {wallet_location}")
-    sys.exit(1)
-
-# Set the TNS_ADMIN environment variable
-os.environ["TNS_ADMIN"] = wallet_location
-
-# Initialize the Oracle client
-oracledb.init_oracle_client(lib_dir=lib_dir)
-
-print("[INFO] Oracle client initialized successfully.")
-
-
 
 app = Flask(__name__)
 
@@ -67,9 +32,12 @@ def load_listings_for_zip(zipcode):
         os.environ['TNS_ADMIN'] = wallet_location
 
         conn = oracledb.connect(
-            user=username,
-            password=password,
-            dsn=dsn
+             config_dir=wallet_location,
+             user=username,
+             password=password,
+             dsn=dsn,
+             wallet_location=wallet_location,
+             wallet_password=wallet_password
         )
     except Exception as e:
         print("Failed to connect", str(e))
