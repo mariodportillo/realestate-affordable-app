@@ -13,11 +13,11 @@ import os
 wallet_location = "Wallet_AffordApp"
 username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
 password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
+lib_dir = os.environ.get("LD_LIBRARY_PATH")
 dsn = "affordapp_high"
 
 os.environ["TNS_ADMIN"] = wallet_location
 
-lib_dir = LD_LIBRARY_PATH
 wallet_dir = wallet_location
 
 # Check that Oracle Instant Client directory exists and has expected files
