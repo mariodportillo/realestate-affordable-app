@@ -15,6 +15,40 @@ username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
 password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
 dsn = "affordapp_high"
 
+os.environ["TNS_ADMIN"] = wallet_location
+
+lib_dir = "/mnt/instantclient/instantclient_21_10"
+wallet_dir = "/mnt/wallet/Wallet_AffordApp"
+
+# Check that Oracle Instant Client directory exists and has expected files
+if not os.path.isdir(lib_dir):
+    print(f"[ERROR] Oracle Instant Client directory does NOT exist: {lib_dir}")
+    sys.exit(1)
+
+# Optional: Check that the Instant Client directory contains some expected shared libs
+expected_files = ["libclntsh.so", "libocci.so"]
+missing_files = [f for f in expected_files if not any(fname.startswith(f) for fname in os.listdir(lib_dir))]
+if missing_files:
+    print(f"[ERROR] Oracle Instant Client missing expected files: {missing_files}")
+    sys.exit(1)
+
+# Check that wallet directory exists and has tnsnames.ora
+if not os.path.isdir(wallet_dir):
+    print(f"[ERROR] Wallet directory does NOT exist: {wallet_dir}")
+    sys.exit(1)
+
+if not os.path.isfile(os.path.join(wallet_dir, "tnsnames.ora")):
+    print(f"[ERROR] Wallet missing tnsnames.ora in: {wallet_dir}")
+    sys.exit(1)
+
+# If all checks pass, set env and initialize
+os.environ["TNS_ADMIN"] = wallet_dir
+oracledb.init_oracle_client(lib_dir=lib_dir)
+
+print("[INFO] Oracle client initialized successfully.")
+
+
+
 app = Flask(__name__)
 
 thetas = np.load("model/weights.npy")
@@ -44,7 +78,7 @@ def load_listings_for_zip(zipcode):
 
     zipcode = int(zipcode)
     # Updated query to use schema-qualified table name
-    query = "SELECT * FROM admin.listings WHERE zip_code = :zipcode"  # Added admin. prefix
+    query = "SELECT * FROM admin.listings WHERE ZIP_CODE = :zipcode"  # Added admin. prefix
     cursor.execute(query, zipcode=zipcode)  # pass named parameter
     columns = [col[0] for col in cursor.description]
     rows = cursor.fetchall()
