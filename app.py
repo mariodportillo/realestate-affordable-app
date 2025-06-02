@@ -17,8 +17,8 @@ dsn = "affordapp_high"
 
 os.environ["TNS_ADMIN"] = wallet_location
 
-lib_dir = "/mnt/instantclient/instantclient_21_10"
-wallet_dir = "/mnt/wallet/Wallet_AffordApp"
+lib_dir = "/home/render/project_root/instantclient_19_8"
+wallet_dir = wallet_location
 
 # Check that Oracle Instant Client directory exists and has expected files
 if not os.path.isdir(lib_dir):
