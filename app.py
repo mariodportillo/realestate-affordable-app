@@ -13,29 +13,37 @@ import os
 wallet_location = "Wallet_AffordApp"
 username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
 password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
-lib_dir = os.environ.get("LD_LIBRARY_PATH")
 dsn = "affordapp_high"
 
 os.environ["TNS_ADMIN"] = wallet_location
 
 wallet_dir = wallet_location
+# Define the path to the Oracle Instant Client directory
+lib_dir = os.path.join(os.getcwd(), "instantclient_19_26")
 
-# Check that Oracle Instant Client directory exists and has expected files
+# Check that Oracle Instant Client directory exists
 if not os.path.isdir(lib_dir):
     print(f"[ERROR] Oracle Instant Client directory does NOT exist: {lib_dir}")
     sys.exit(1)
 
-# Check that wallet directory exists and has tnsnames.ora
-if not os.path.isdir(wallet_dir):
-    print(f"[ERROR] Wallet directory does NOT exist: {wallet_dir}")
+# Define the wallet location
+wallet_location = os.path.join(os.getcwd(), "Wallet_AffordApp")
+
+# Check that wallet directory exists
+if not os.path.isdir(wallet_location):
+    print(f"[ERROR] Wallet directory does NOT exist: {wallet_location}")
     sys.exit(1)
 
-if not os.path.isfile(os.path.join(wallet_dir, "tnsnames.ora")):
-    print(f"[ERROR] Wallet missing tnsnames.ora in: {wallet_dir}")
+# Check that tnsnames.ora exists in the wallet directory
+tns_file = os.path.join(wallet_location, "tnsnames.ora")
+if not os.path.isfile(tns_file):
+    print(f"[ERROR] Wallet missing tnsnames.ora in: {wallet_location}")
     sys.exit(1)
 
-# If all checks pass, set env and initialize
-os.environ["TNS_ADMIN"] = wallet_dir
+# Set the TNS_ADMIN environment variable
+os.environ["TNS_ADMIN"] = wallet_location
+
+# Initialize the Oracle client
 oracledb.init_oracle_client(lib_dir=lib_dir)
 
 print("[INFO] Oracle client initialized successfully.")

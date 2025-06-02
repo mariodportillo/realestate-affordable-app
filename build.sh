@@ -12,16 +12,17 @@ if [ ! -f "$ZIP_FILE" ]; then
   exit 1
 fi
 
-# Unzip the Oracle Instant Client if not already unpacked
+# Unzip the Oracle Instant Client directly into the target directory
 if [ ! -d "$TARGET_DIR" ]; then
   echo "[INFO] Unpacking Oracle Instant Client..."
+  mkdir -p "$TARGET_DIR"
   unzip -q "$ZIP_FILE" -d "$TARGET_DIR"
 fi
 
 # Set up the Oracle environment variables
 echo "[INFO] Exporting Oracle environment variables..."
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/$TARGET_DIR"
-export TNS_ADMIN=$(pwd)/Wallet_AffordApp
+export LD_LIBRARY_PATH="$(pwd)/$TARGET_DIR"
+export TNS_ADMIN="$(pwd)/Wallet_AffordApp"
 
 # Verify wallet directory exists
 echo "[INFO] Wallet directory is:"
