@@ -9,11 +9,10 @@ import sys
 import os
 
 
-# Test with original credentials first, then switch to read-only
 # --- Oracle connection info ---
 wallet_location = "Wallet_AffordApp"
-username = ORACLE_DB_USERNAME  # Original admin user
-password = ORACLE_DB_PASSWORD  # Original admin password
+username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
+password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
 dsn = "affordapp_high"
 
 app = Flask(__name__)
