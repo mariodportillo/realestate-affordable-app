@@ -263,8 +263,7 @@ a:hover {
 
   form input[type="number"],
   form input[type="submit"] {
-    font-size: 1rem;
-    padding: 0.75rem;
+    max-width: 100%;
   }
 
   .button-container {
