@@ -202,3 +202,65 @@ a:hover {
   width: 320px;
   box-sizing: border-box;
 }
+
+/* RESPONSIVE DESIGN FOR MOBILE */
+@media (max-width: 768px) {
+  body {
+    max-width: 100%;
+    margin: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .menu-button {
+    margin-bottom: 10px;
+  }
+
+  .cards-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  form {
+    padding: 1rem;
+  }
+
+  form input[type="number"],
+  form input[type="submit"] {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+
+  .button-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .carousel-container,
+  #affordabilityChartContainer {
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  .menu-dropdown {
+    width: 100%;
+    position: static;
+    box-shadow: none;
+  }
+
+  .menu-dropdown a {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+  }
+}
