@@ -9,12 +9,21 @@ from utils import evaluate_affordability, find_zip_codes
 from model.training_model import LogisticRegressionRealEstate
 import os
 
-# --- Oracle connection info ---
-wallet_location = "Wallet_AffordApp"
-username = os.environ.get("ORACLE_DB_USERNAME")  # Env vars for security
-password = os.environ.get("ORACLE_DB_PASSWORD")
-wallet_password = os.environ.get("WALLET_PASSWORD")
 IS_RENDER = os.getenv("RENDER") == "true"
+
+if IS_RENDER:
+    # --- Oracle connection info ---
+    wallet_location = "Wallet_AffordApp"
+    username = os.environ.get("ORACLE_DB_USERNAME")  # Env vars for security
+    password = os.environ.get("ORACLE_DB_PASSWORD")
+    wallet_password = os.environ.get("WALLET_PASSWORD")
+else:
+    from secret import send_credentials
+    cred_dict = send_credentials()
+    wallet_location = cred_dict["wallet_location"]
+    username = cred_dict["username"]
+    password = cred_dict["password"]
+    wallet_password = cred_dict["wallet_password"]
 
 dsn = "affordapp_high"
 

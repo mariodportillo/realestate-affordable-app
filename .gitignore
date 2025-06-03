@@ -4,3 +4,4 @@ secret.env
 .idea
 __pycache__/
 zipcode_data_gen.py
+secret.py
