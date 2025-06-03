@@ -96,9 +96,10 @@ def train_model_page():
     result_dict = None
     if request.method == "POST":
 
-        if IS_RENDER:
-            raise Exception("Sorry, can't train the model on RENDER. Need to run locally.")
         try:
+            if IS_RENDER:
+                raise Exception("Sorry, can't train the model on RENDER. Need to run locally.")
+
             n_val = float(request.form.get("n_value", default_n))
             model = LogisticRegressionRealEstate(learning_rate=n_val, training_steps=3000)
 
