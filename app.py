@@ -14,6 +14,7 @@ wallet_location = "Wallet_AffordApp"
 username = os.environ.get("ORACLE_DB_USERNAME")  # Env vars for security
 password = os.environ.get("ORACLE_DB_PASSWORD")
 wallet_password = os.environ.get("WALLET_PASSWORD")
+IS_RENDER = os.getenv("RENDER") == "true"
 
 dsn = "affordapp_high"
 
@@ -36,7 +37,6 @@ def chunk_list(lst, n):
 def load_listings_for_zip(zipcode):
     try:
         os.environ['TNS_ADMIN'] = wallet_location
-
         conn = oracledb.connect(
             config_dir=wallet_location,
             user=username,
@@ -81,7 +81,15 @@ default_coefs.update({default_feature_columns[i]: coef for i, coef in enumerate(
 def train_model_page():
     result_dict = None
     if request.method == "POST":
+
+        if IS_RENDER:
+            result_dict = {"error": "Cannot train on render. SORRY."}
+            return result_dict
+
         try:
+
+
+
             n_val = float(request.form.get("n_value", default_n))
             model = LogisticRegressionRealEstate(learning_rate=n_val, training_steps=3000)
 
