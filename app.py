@@ -2,15 +2,17 @@ import oracledb
 import numpy as np
 import pandas as pd
 import json
-from flask import Flask, render_template, request
+import gzip, io
+from sklearn.model_selection import train_test_split
+from flask import Flask, render_template, request, render_template_string
 from utils import evaluate_affordability, find_zip_codes
+from model.training_model import LogisticRegressionRealEstate
 import os
-
 
 # --- Oracle connection info ---
 wallet_location = "Wallet_AffordApp"
-username = os.environ.get("ORACLE_DB_USERNAME")  # Now it won't throw NameError
-password = os.environ.get("ORACLE_DB_PASSWORD")  # Do the same for password
+username = os.environ.get("ORACLE_DB_USERNAME")  # Env vars for security
+password = os.environ.get("ORACLE_DB_PASSWORD")
 wallet_password = os.environ.get("WALLET_PASSWORD")
 
 dsn = "affordapp_high"
@@ -20,6 +22,10 @@ app = Flask(__name__)
 thetas = np.load("model/weights.npy")
 with open("model/stats.json", "r") as f:
     norm_stats = json.load(f)
+
+with gzip.open("model/ahs2023n.feather.gz", "rb") as f:
+    decompressed_bytes = f.read()
+df_raw_ahs = pd.read_feather(io.BytesIO(decompressed_bytes))
 
 
 def chunk_list(lst, n):
@@ -32,12 +38,12 @@ def load_listings_for_zip(zipcode):
         os.environ['TNS_ADMIN'] = wallet_location
 
         conn = oracledb.connect(
-             config_dir=wallet_location,
-             user=username,
-             password=password,
-             dsn=dsn,
-             wallet_location=wallet_location,
-             wallet_password=wallet_password
+            config_dir=wallet_location,
+            user=username,
+            password=password,
+            dsn=dsn,
+            wallet_location=wallet_location,
+            wallet_password=wallet_password
         )
     except Exception as e:
         print("Failed to connect", str(e))
@@ -46,19 +52,70 @@ def load_listings_for_zip(zipcode):
     cursor = conn.cursor()
 
     zipcode = int(zipcode)
-    # Updated query to use schema-qualified table name
-    query = "SELECT * FROM admin.listings WHERE ZIP_CODE = :zipcode"  # Added admin. prefix
-    cursor.execute(query, zipcode=zipcode)  # pass named parameter
+    query = "SELECT * FROM admin.listings WHERE ZIP_CODE = :zipcode"
+    cursor.execute(query, zipcode=zipcode)
     columns = [col[0] for col in cursor.description]
     rows = cursor.fetchall()
     conn.close()
     df = pd.DataFrame(rows, columns=columns)
     return df
 
-@app.route("/train")
-def train_model_page():
 
-    return "<h1 style='text-align:center; margin-top:50px;'>Train Model Page (Coming Soon)</h1>"
+# Precompute default model once on app startup (global scope)
+default_n = 0.0005
+default_model = LogisticRegressionRealEstate(learning_rate=default_n, training_steps=3000)
+
+df_normalized_global = default_model.normalize(df_raw_ahs)
+train_df_global, test_df_global = train_test_split(df_normalized_global, test_size=0.2, random_state=42)
+
+default_model.train(train_df_global)
+default_preds = default_model.predict(test_df_global)
+default_accuracy = default_model.evaluate(test_df_global, default_preds)
+
+default_feature_columns = train_df_global.columns.drop(['Label']).tolist()
+default_coefs = {"Bias": default_model.thetas[0]}
+default_coefs.update({default_feature_columns[i]: coef for i, coef in enumerate(default_model.thetas[1:])})
+
+
+@app.route("/train", methods=["GET", "POST"])
+def train_model_page():
+    result_dict = None
+    if request.method == "POST":
+        try:
+            n_val = float(request.form.get("n_value", default_n))
+            model = LogisticRegressionRealEstate(learning_rate=n_val, training_steps=3000)
+
+            # Normalize and split inside route fresh for each new model
+            df_normalized = model.normalize(df_raw_ahs)
+            train_df, test_df = train_test_split(df_normalized, test_size=0.2, random_state=42)
+
+            model.train(train_df)
+            predictions = model.predict(test_df)
+            accuracy = model.evaluate(test_df, predictions)
+
+            feature_columns = train_df.columns.drop(['Label']).tolist()
+
+            # Prepare dictionary with results for the user-trained model
+            user_coefs = {"Bias": model.thetas[0]}
+            user_coefs.update({feature_columns[i]: coef for i, coef in enumerate(model.thetas[1:])})
+
+            result_dict = {
+                "learning_rate": n_val,
+                "accuracy": accuracy,
+                "coefficients": user_coefs,
+            }
+        except Exception as e:
+            result_dict = {"error": str(e)}
+
+    # Use the precomputed default results here, do NOT recompute them inside the route
+    return render_template("train.html",
+                           default_accuracy=default_accuracy,
+                           default_coefs=default_coefs,
+                           result=result_dict,
+                           default_n=default_n)
+
+
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():

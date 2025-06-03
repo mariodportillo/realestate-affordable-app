@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Train Logistic Regression Model</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_train.css') }}">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <!-- Left: Hamburger -->
+    <div style="position: relative;">
+      <div id="menu-icon" class="menu-button">&#9776;</div>
+
+      <div id="menu-dropdown" class="menu-dropdown">
+        <a href="/">Home</a>
+        <a href="/train">Train Model</a>
+      </div>
+    </div>
+
+    <!-- Right: Title -->
+    <div style="font-weight: bold;">Home Affordability Estimator</div>
+  </nav>
+
+  <script>
+    const menuIcon = document.getElementById("menu-icon");
+    const menuDropdown = document.getElementById("menu-dropdown");
+
+    menuIcon.addEventListener("click", () => {
+      menuDropdown.style.display = menuDropdown.style.display === "block" ? "none" : "block";
+    });
+
+    window.addEventListener("click", (event) => {
+      if (!menuIcon.contains(event.target) && !menuDropdown.contains(event.target)) {
+        menuDropdown.style.display = "none";
+      }
+    });
+  </script>
+
+  <h1>Train Logistic Regression Model</h1>
+  <form method="post">
+      <label for="n_value">Enter Learning Rate (n):</label><br />
+      <input type="number" step="any" id="n_value" name="n_value" value="{{ default_n }}" /><br />
+      <input type="submit" value="Train Model" />
+  </form>
+
+  <div class="cards-container">
+    <div class="card">
+      <h3>Default Model (n = {{ default_n }})</h3>
+      <p><strong>Accuracy:</strong> {{ '%.2f' % (default_accuracy * 100) }}%</p>
+      <h4>Coefficients</h4>
+      <ul>
+        {% for feature, coef in default_coefs.items() %}
+          <li><strong>{{ feature }}:</strong> {{ "%.4f"|format(coef) }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if result %}
+      <div class="card">
+        {% if result.error %}
+          <p style="color:red;">Error: {{ result.error }}</p>
+        {% else %}
+          <h3>User Trained Model (n = {{ result.learning_rate }})</h3>
+          <p><strong>Accuracy:</strong> {{ '%.2f' % (result.accuracy * 100) }}%</p>
+          <h4>Coefficients</h4>
+          <ul>
+            {% for feature, coef in result.coefficients.items() %}
+              <li><strong>{{ feature }}:</strong> {{ "%.4f"|format(coef) }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+</body>
+</html>
