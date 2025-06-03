@@ -4,47 +4,40 @@
   <title>Affordability Estimator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .carousel-container {
-      max-width: 800px;
-      margin: 40px auto;
-      position: relative;
-    }
-    .carousel-slide {
-      display: none;
-    }
-    .carousel-slide.active {
-      display: block;
-    }
-    .nav-controls {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .nav-arrow {
-      cursor: pointer;
-      font-size: 24px;
-      background: rgba(0,0,0,0.1);
-      color: black;
-      padding: 8px 12px;
-      margin: 0 10px;
-      border-radius: 8px;
-      user-select: none;
-      display: inline-block;
-    }
-    .property-box {
-      border: 1px solid #ccc;
-      padding: 12px;
-      border-radius: 10px;
-      margin: 10px 0;
-      background-color: #f9f9f9;
-    }
-    #affordabilityChartContainer {
-      max-width: 500px;
-      margin: 30px auto;
-    }
-  </style>
 </head>
+
 <body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <!-- Left: Hamburger -->
+    <div style="position: relative;">
+      <div id="menu-icon" class="menu-button">&#9776;</div>
+
+      <div id="menu-dropdown" class="menu-dropdown">
+        <a href="/">Home</a>
+        <a href="/train">Train Model</a>
+      </div>
+    </div>
+
+    <!-- Right: Title -->
+    <div style="font-weight: bold;">Home Affordability Estimator</div>
+  </nav>
+
+  <script>
+    const menuIcon = document.getElementById("menu-icon");
+    const menuDropdown = document.getElementById("menu-dropdown");
+
+    menuIcon.addEventListener("click", () => {
+      menuDropdown.style.display = menuDropdown.style.display === "block" ? "none" : "block";
+    });
+
+    window.addEventListener("click", (event) => {
+      if (!menuIcon.contains(event.target) && !menuDropdown.contains(event.target)) {
+        menuDropdown.style.display = "none";
+      }
+    });
+  </script>
+
   <h1>Home Affordability Estimator</h1>
 
   <form method="post">
@@ -121,8 +114,8 @@
   </script>
 
   <div class="nav-controls">
-      <span class="nav-arrow" onclick="changeSlide(-1)">&#10094;</span>
-      <span class="nav-arrow" onclick="changeSlide(1)">&#10095;</span>
+    <span class="nav-arrow" onclick="changeSlide(-1)">&#10094;</span>
+    <span class="nav-arrow" onclick="changeSlide(1)">&#10095;</span>
   </div>
   {% endif %}
 

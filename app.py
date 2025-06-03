@@ -55,6 +55,10 @@ def load_listings_for_zip(zipcode):
     df = pd.DataFrame(rows, columns=columns)
     return df
 
+@app.route("/train")
+def train_model_page():
+
+    return "<h1 style='text-align:center; margin-top:50px;'>Train Model Page (Coming Soon)</h1>"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
