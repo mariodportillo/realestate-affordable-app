@@ -21,13 +21,26 @@ class LogisticRegressionRealEstate:
 
     def normalize(self, df):
         df = df.copy()
-        self.stats = {}
+        # Initialize stats if not already present
+        if not hasattr(self, "norm_stats") or self.norm_stats is None:
+            self.norm_stats = {}
+
         for col in df.columns:
-            if col != 'Label':
+            if col == "Label":
+                continue
+            # Use preloaded stats if available
+            if col in self.norm_stats:
+                mean, std = self.norm_stats[col]
+            else:
                 mean = df[col].mean()
                 std = df[col].std()
+                self.norm_stats[col] = (mean, std)
+
+            # Prevent division by zero
+            if std != 0:
                 df[col] = (df[col] - mean) / std
-                self.stats[col] = (mean, std)
+            else:
+                df[col] = 0.0
         return df
 
     def train(self, df):

@@ -37,6 +37,27 @@ with gzip.open("model/ahs2023n.feather.gz", "rb") as f:
     decompressed_bytes = f.read()
 df_raw_ahs = pd.read_feather(io.BytesIO(decompressed_bytes))
 
+# Initialize model
+default_model = LogisticRegressionRealEstate(learning_rate=0.0005, training_steps=3000)
+
+# Set weights and normalization stats
+default_model.thetas = thetas
+default_model.norm_stats = norm_stats
+default_n = 0.0005
+# Normalize using loaded stats (your model.normalize() should use norm_stats)
+df_normalized_global = default_model.normalize(df_raw_ahs)
+
+# Train/test split (no retraining here)
+train_df_global, test_df_global = train_test_split(df_normalized_global, test_size=0.2, random_state=42)
+
+# Predict and evaluate with stored weights
+default_preds = default_model.predict(test_df_global)
+default_accuracy = default_model.evaluate(test_df_global, default_preds)
+
+# Extract coefficients for display
+default_feature_columns = train_df_global.columns.drop(['Label']).tolist()
+default_coefs = {"Bias": default_model.thetas[0]}
+default_coefs.update({default_feature_columns[i]: coef for i, coef in enumerate(default_model.thetas[1:])})
 
 def chunk_list(lst, n):
     for i in range(0, len(lst), n):
@@ -70,35 +91,14 @@ def load_listings_for_zip(zipcode):
     return df
 
 
-# Precompute default model once on app startup (global scope)
-default_n = 0.0005
-default_model = LogisticRegressionRealEstate(learning_rate=default_n, training_steps=3000)
-
-df_normalized_global = default_model.normalize(df_raw_ahs)
-train_df_global, test_df_global = train_test_split(df_normalized_global, test_size=0.2, random_state=42)
-
-default_model.train(train_df_global)
-default_preds = default_model.predict(test_df_global)
-default_accuracy = default_model.evaluate(test_df_global, default_preds)
-
-default_feature_columns = train_df_global.columns.drop(['Label']).tolist()
-default_coefs = {"Bias": default_model.thetas[0]}
-default_coefs.update({default_feature_columns[i]: coef for i, coef in enumerate(default_model.thetas[1:])})
-
-
 @app.route("/train", methods=["GET", "POST"])
 def train_model_page():
     result_dict = None
     if request.method == "POST":
 
         if IS_RENDER:
-            result_dict = {"error": "Cannot train on render. SORRY."}
-            return result_dict
-
+            raise Exception("Sorry, can't train the model on RENDER. Need to run locally.")
         try:
-
-
-
             n_val = float(request.form.get("n_value", default_n))
             model = LogisticRegressionRealEstate(learning_rate=n_val, training_steps=3000)
 
