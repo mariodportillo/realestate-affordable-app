@@ -36,14 +36,14 @@ with open("model/stats.json", "r") as f:
 with gzip.open("model/ahs2023n.feather.gz", "rb") as f:
     decompressed_bytes = f.read()
 df_raw_ahs = pd.read_feather(io.BytesIO(decompressed_bytes))
-
+default_n = 0.0005
 # Initialize model
-default_model = LogisticRegressionRealEstate(learning_rate=0.0005, training_steps=3000)
+default_model = LogisticRegressionRealEstate(learning_rate=default_n, training_steps=3000)
 
 # Set weights and normalization stats
 default_model.thetas = thetas
 default_model.norm_stats = norm_stats
-default_n = 0.0005
+
 # Normalize using loaded stats (your model.normalize() should use norm_stats)
 df_normalized_global = default_model.normalize(df_raw_ahs)
 

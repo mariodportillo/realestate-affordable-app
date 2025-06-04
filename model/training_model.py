@@ -56,12 +56,16 @@ class LogisticRegressionRealEstate:
             gradients = np.dot(errors, X)
             self.thetas += self.learning_rate * gradients
 
-    def predict(self, df):
+    def predict(self, df, proba=False):
         df = df.copy()
         df.insert(0, "x0", 1)
         X = df.drop(columns=['Label']).values
-        predictions = self.sigmoid(np.dot(X, self.thetas))
-        return (predictions >= 0.5).astype(int)
+        probabilities = self.sigmoid(np.dot(X, self.thetas))
+
+        if proba:
+            return probabilities  # Return probability P(Y = 1 | X)
+        else:
+            return (probabilities >= 0.5).astype(int)  # Return hard label
 
     def evaluate(self, df, predictions):
         true_values = df['Label'].values
@@ -101,6 +105,7 @@ if __name__ == "__main__":
     with gzip.open("ahs2023n.feather.gz", "rb") as f:
         decompressed_bytes = f.read()
     df = pd.read_feather(io.BytesIO(decompressed_bytes))
+
 
     model = LogisticRegressionRealEstate(learning_rate=0.0005)
     df_normalized = model.normalize(df)
